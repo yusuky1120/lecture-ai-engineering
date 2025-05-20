@@ -4,7 +4,6 @@ import pandas as pd
 import numpy as np
 import pickle
 import time
-import mlflow
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score
@@ -118,9 +117,6 @@ def test_model_accuracy(train_model):
     y_pred = model.predict(X_test)
     accuracy = accuracy_score(y_test, y_pred)
 
-    with mlflow.start_run(run_name="Model Accuracy Test"):
-        mlflow.log_metric("accuracy", accuracy)
-
     # Titanicデータセットでは0.75以上の精度が一般的に良いとされる
     assert accuracy >= 0.75, f"モデルの精度が低すぎます: {accuracy}"
 
@@ -135,9 +131,6 @@ def test_model_inference_time(train_model):
     end_time = time.time()
 
     inference_time = end_time - start_time
-
-    with mlflow.start_run(run_name="Inference Time Test"):
-        mlflow.log_metric("inference_time", inference_time)
 
     # 推論時間が1秒未満であることを確認
     assert inference_time < 1.0, f"推論時間が長すぎます: {inference_time}秒"
@@ -179,30 +172,22 @@ def test_model_reproducibility(sample_data, preprocessor):
         predictions1, predictions2
     ), "モデルの予測結果に再現性がありません"
 
-
-def test_model_performance_regression(train_model):
-    """旧モデルとの比較による性能劣化チェック（+ MLflowログ）"""
-    model_new, X_test, y_test = train_model
+    def test_model_regression(train_model):
+    """旧モデルとの精度比較で劣化がないか検証"""
+    model, X_test, y_test = train_model
     previous_model_path = os.path.join(MODEL_DIR, "titanic_model_previous.pkl")
 
+    # 旧モデルがなければスキップ
     if not os.path.exists(previous_model_path):
-        pytest.skip("過去モデルが存在しないためスキップします")
+        pytest.skip("旧モデルが存在しないためスキップします")
 
     # 旧モデル読み込み
     with open(previous_model_path, "rb") as f:
-        model_old = pickle.load(f)
+        old_model = pickle.load(f)
 
-    # 予測とスコア
-    acc_new = accuracy_score(y_test, model_new.predict(X_test))
-    acc_old = accuracy_score(y_test, model_old.predict(X_test))
+    # 精度計算
+    acc_new = accuracy_score(y_test, model.predict(X_test))
+    acc_old = accuracy_score(y_test, old_model.predict(X_test))
 
-    # MLflowログ
-    with mlflow.start_run(run_name="Model Regression Test"):
-        mlflow.log_metric("accuracy_new", acc_new)
-        mlflow.log_metric("accuracy_old", acc_old)
-        mlflow.log_metric("accuracy_drop", acc_old - acc_new)
-
-    # 劣化が1%以上でNG
-    assert (
-        acc_new + 0.01 >= acc_old
-    ), f"モデル精度が劣化しています: 旧={acc_old:.4f}, 新={acc_new:.4f}"
+    # 新モデルの精度が1%以上劣化していないことを確認
+    assert acc_new + 0.01 >= acc_old, f"性能が劣化しています: 旧={acc_old:.4f}, 新={acc_new:.4f}"
