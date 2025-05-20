@@ -121,7 +121,6 @@ def test_model_accuracy(train_model):
     with mlflow.start_run(run_name="Model Accuracy Test"):
         mlflow.log_metric("accuracy", accuracy)
 
-
     # Titanicデータセットでは0.75以上の精度が一般的に良いとされる
     assert accuracy >= 0.75, f"モデルの精度が低すぎます: {accuracy}"
 
@@ -180,6 +179,7 @@ def test_model_reproducibility(sample_data, preprocessor):
         predictions1, predictions2
     ), "モデルの予測結果に再現性がありません"
 
+
 def test_model_performance_regression(train_model):
     """旧モデルとの比較による性能劣化チェック（+ MLflowログ）"""
     model_new, X_test, y_test = train_model
@@ -203,6 +203,6 @@ def test_model_performance_regression(train_model):
         mlflow.log_metric("accuracy_drop", acc_old - acc_new)
 
     # 劣化が1%以上でNG
-    assert acc_new + 0.01 >= acc_old, (
-        f"モデル精度が劣化しています: 旧={acc_old:.4f}, 新={acc_new:.4f}"
-    )
+    assert (
+        acc_new + 0.01 >= acc_old
+    ), f"モデル精度が劣化しています: 旧={acc_old:.4f}, 新={acc_new:.4f}"
