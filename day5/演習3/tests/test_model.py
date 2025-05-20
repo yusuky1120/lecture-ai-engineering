@@ -172,7 +172,8 @@ def test_model_reproducibility(sample_data, preprocessor):
         predictions1, predictions2
     ), "モデルの予測結果に再現性がありません"
 
-    def test_model_regression(train_model):
+
+def test_model_regression(train_model):
     """旧モデルとの精度比較で劣化がないか検証"""
     model, X_test, y_test = train_model
     previous_model_path = os.path.join(MODEL_DIR, "titanic_model_previous.pkl")
@@ -190,4 +191,6 @@ def test_model_reproducibility(sample_data, preprocessor):
     acc_old = accuracy_score(y_test, old_model.predict(X_test))
 
     # 新モデルの精度が1%以上劣化していないことを確認
-    assert acc_new + 0.01 >= acc_old, f"性能が劣化しています: 旧={acc_old:.4f}, 新={acc_new:.4f}"
+    assert (
+        acc_new + 0.01 >= acc_old
+    ), f"性能が劣化しています: 旧={acc_old:.4f}, 新={acc_new:.4f}"
